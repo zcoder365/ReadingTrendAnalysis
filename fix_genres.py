@@ -180,4 +180,4 @@ if __name__ == "__main__":
     output_file = "goodreads_2020_to_2025_books_FIXED.csv"
     
     # get top 2 genres for each book
-    fix_genres_in_csv(input_file, output_file, max_genres=2)
+    fix_genres_in_csv(input_file, output_file, max_genres=1)
