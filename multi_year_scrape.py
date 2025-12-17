@@ -273,9 +273,5 @@ if __name__ == "__main__":
     print("GOODREADS SCRAPER: 2020-2025")
     print("=" * 60)
     
-    # option 1: fast scrape without genres
-    scrape_goodreads_multi_year(2020, 2025, include_genres=False)
-    
-    # option 2: slower scrape WITH genres (uncomment to use)
-    # NOTE: this will take ~30-60 minutes for 1000+ books!
-    # scrape_goodreads_multi_year(2020, 2025, include_genres=True)
+    # scraping WITH genres - will take ~30-60 minutes for all books
+    scrape_goodreads_multi_year(2020, 2025, include_genres=True)
