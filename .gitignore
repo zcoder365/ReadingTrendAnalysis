@@ -1,0 +1,24 @@
+# Python stuff
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+
+# CSV data files (you can remove this line if you want to track the data)
+*.csv
+
+# IDE stuff
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Mac stuff
+.DS_Store
+
+# Selenium stuff
+chromedriver
