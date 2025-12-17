@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from bs4 import BeautifulSoup
 import csv
 import time
 import json
@@ -8,7 +9,7 @@ import re
 def scrape_goodreads_2025():
     """
     scrapes the most popular books from 2025 on goodreads
-    extracts data from the __NEXT_DATA__ json embedded in the page
+    uses BOTH the initial json data AND html parsing after clicking "show more"
     """
     
     url = "https://www.goodreads.com/book/popular_by_date/2025"
@@ -42,7 +43,7 @@ def scrape_goodreads_2025():
         
         # click "show more books" button until all books are loaded
         click_count = 0
-        max_clicks = 20  # safety limit
+        max_clicks = 25  # increased to make sure we get all 200
         print("\n🔽 clicking 'show more books' button...")
         
         while click_count < max_clicks:
@@ -53,10 +54,13 @@ def scrape_goodreads_2025():
                 
                 # look for the "show more books" button
                 for button in buttons:
-                    button_text = button.text.lower()
-                    if "show more" in button_text and "book" in button_text:
-                        show_more_button = button
-                        break
+                    try:
+                        button_text = button.text.lower()
+                        if "show more" in button_text and "book" in button_text:
+                            show_more_button = button
+                            break
+                    except:
+                        continue
                 
                 if show_more_button and show_more_button.is_displayed():
                     # scroll to button and click it
@@ -71,100 +75,110 @@ def scrape_goodreads_2025():
                     break
                     
             except Exception as e:
-                print(f"🎉 finished clicking after {click_count} clicks")
+                print(f"🎉 finished clicking after {click_count} clicks (error: {e})")
                 break
+        
+        # scroll back to top so we can parse everything
+        print("\n📜 scrolling through entire page to ensure everything is loaded...")
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(1)
+        
+        # scroll down in chunks to make sure everything renders
+        total_height = driver.execute_script("return document.body.scrollHeight")
+        current_position = 0
+        scroll_increment = 1000
+        
+        while current_position < total_height:
+            current_position += scroll_increment
+            driver.execute_script(f"window.scrollTo(0, {current_position});")
+            time.sleep(0.5)
+        
+        # scroll back to top
+        driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(2)
         
         # get the fully rendered page source
         print("\n📄 grabbing page source...")
         page_source = driver.page_source
         
-        # extract the json data from the __NEXT_DATA__ script tag
-        print("🔍 extracting json data from page...")
-        match = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', page_source, re.DOTALL)
+        # parse with beautifulsoup to get all visible books
+        print("🍜 parsing html with beautifulsoup...")
+        soup = BeautifulSoup(page_source, 'html.parser')
         
-        if not match:
-            print("❌ could not find __NEXT_DATA__ json!")
+        # find all book containers
+        book_articles = soup.find_all('article', class_='BookListItem')
+        print(f"📚 found {len(book_articles)} book containers!\n")
+        
+        if len(book_articles) == 0:
+            print("❌ no books found in html")
             return
         
-        # parse the json
-        json_data = json.loads(match.group(1))
-        
-        # navigate to the apollo state which contains all book data
-        apollo_state = json_data['props']['pageProps']['apolloState']
-        
-        # extract all book data from the apollo state
+        # extract data from each book
         books_data = []
         
-        print("📚 parsing book data from json...\n")
-        
-        # iterate through all Work objects in the apollo state
-        for key, value in apollo_state.items():
-            if key.startswith('Work:') and isinstance(value, dict):
-                # get book stats (ratings, average rating)
-                stats = value.get('stats', {})
-                ratings_count = stats.get('ratingsCount', 0)
-                average_rating = stats.get('averageRating', 0)
+        for idx, article in enumerate(book_articles, 1):
+            try:
+                # get title
+                title_link = article.find('a', {'data-testid': 'bookTitle'})
+                title = title_link.get_text(strip=True) if title_link else "N/A"
                 
-                # get the best book reference
-                details = value.get('details', {})
-                best_book_ref = details.get('bestBook', {}).get('__ref', '')
+                # get author
+                author_span = article.find('span', {'data-testid': 'name'})
+                author = author_span.get_text(strip=True) if author_span else "N/A"
                 
-                if not best_book_ref:
-                    continue
+                # get rating - it's in the aria-label of the AverageRating div
+                rating_div = article.find('div', class_='AverageRating')
+                rating = "N/A"
+                if rating_div and rating_div.get('aria-label'):
+                    # aria-label format: "4.21 stars, 2 million ratings"
+                    aria_label = rating_div.get('aria-label')
+                    rating_match = re.search(r'([\d.]+)\s+stars?', aria_label)
+                    if rating_match:
+                        rating = rating_match.group(1)
                 
-                # look up the book details in apollo state
-                book = apollo_state.get(best_book_ref, {})
+                # get ratings count - also in aria-label
+                ratings_count = "N/A"
+                if rating_div and rating_div.get('aria-label'):
+                    aria_label = rating_div.get('aria-label')
+                    # formats: "2 million ratings" or "969 thousand ratings" or "617k ratings"
+                    if 'million' in aria_label:
+                        count_match = re.search(r'([\d.]+)\s+million', aria_label)
+                        if count_match:
+                            ratings_count = f"{count_match.group(1)}m"
+                    elif 'thousand' in aria_label:
+                        count_match = re.search(r'([\d.]+)\s+thousand', aria_label)
+                        if count_match:
+                            ratings_count = f"{count_match.group(1)}k"
+                    else:
+                        # try to find the number directly
+                        count_match = re.search(r'([\d,]+)\s+ratings?', aria_label)
+                        if count_match:
+                            ratings_count = count_match.group(1)
                 
-                if not book:
-                    continue
-                
-                # extract title
-                title = book.get('titleComplete', 'N/A')
-                
-                # extract author
-                author_edge = book.get('primaryContributorEdge', {})
-                author_ref = author_edge.get('node', {}).get('__ref', '')
-                author_data = apollo_state.get(author_ref, {})
-                author = author_data.get('name', 'N/A')
-                
-                # format ratings count (convert to k/m format)
-                if ratings_count >= 1000000:
-                    formatted_ratings = f"{ratings_count / 1000000:.1f}m"
-                elif ratings_count >= 1000:
-                    formatted_ratings = f"{ratings_count / 1000:.0f}k"
-                else:
-                    formatted_ratings = str(ratings_count)
-                
-                # store book data with raw count for sorting
-                books_data.append({
+                # store book data
+                book_data = {
+                    'rank': idx,
                     'title': title,
                     'author': author,
-                    'rating': average_rating,
-                    'ratings_count': formatted_ratings,
-                    'ratings_count_raw': ratings_count  # for sorting
-                })
-        
-        # sort by ratings count (most popular first)
-        books_data.sort(key=lambda x: x['ratings_count_raw'], reverse=True)
-        
-        # add rank and remove raw count
-        for idx, book in enumerate(books_data, 1):
-            book['rank'] = idx
-            del book['ratings_count_raw']
-        
-        print(f"✨ found {len(books_data)} books!\n")
-        
-        # print first 10 books
-        for book in books_data[:10]:
-            print(f"✅ #{book['rank']}: {book['title']} by {book['author']} ({book['rating']}⭐, {book['ratings_count']} ratings)")
-        
-        if len(books_data) > 10:
-            print(f"... and {len(books_data) - 10} more books ...\n")
+                    'rating': rating,
+                    'ratings_count': ratings_count
+                }
+                books_data.append(book_data)
+                
+                # print progress for first 10 and last 10
+                if idx <= 10 or idx > len(book_articles) - 10:
+                    print(f"✅ #{idx}: {title} by {author} ({rating}⭐, {ratings_count} ratings)")
+                elif idx == 11:
+                    print(f"... scraping books #11 - {len(book_articles) - 10} ...")
+                    
+            except Exception as e:
+                print(f"❌ error scraping book #{idx}: {e}")
+                continue
         
         # save to csv
         if len(books_data) > 0:
             csv_filename = "goodreads_2025_popular_books.csv"
-            print(f"💾 saving {len(books_data)} books to {csv_filename}...")
+            print(f"\n💾 saving {len(books_data)} books to {csv_filename}...")
             
             with open(csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
                 fieldnames = ['rank', 'title', 'author', 'rating', 'ratings_count']
@@ -177,6 +191,11 @@ def scrape_goodreads_2025():
             
             print(f"✨ done! successfully scraped {len(books_data)} books!")
             print(f"📊 csv saved as: {csv_filename}")
+            
+            # print summary
+            print(f"\n📈 summary:")
+            print(f"   total books scraped: {len(books_data)}")
+            print(f"   with complete data: {sum(1 for b in books_data if b['author'] != 'N/A' and b['rating'] != 'N/A')}")
         else:
             print("\n❌ no books were scraped")
         
