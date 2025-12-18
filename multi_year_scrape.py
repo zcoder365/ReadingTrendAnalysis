@@ -158,37 +158,73 @@ def scrape_goodreads_year(driver, year):
         return []
 
 
-def get_book_genres(driver, book_url, max_genres=3):
+def get_book_genres(driver, book_url, max_genres=1):
     """
-    visits a book's page and extracts its genres
-    returns comma-separated string of genres
+    visits a book's page and extracts its primary genre
+    returns single genre string
     """
     if not book_url:
         return "N/A"
     
     try:
         driver.get(book_url)
-        time.sleep(2)
+        time.sleep(2)  # wait for page to load
         
         soup = BeautifulSoup(driver.page_source, 'html.parser')
         
-        # genres are in links with class containing "Button" and text that looks like genre
-        # they're usually in a section with "Genres" text
-        genre_links = []
+        # strategy 1: look for the word "Genres" in the html, then grab the genre links that follow
+        # find all text nodes containing "Genres"
+        all_text = soup.find_all(text=re.compile(r'Genres', re.IGNORECASE))
         
-        # method 1: look for genre shelf links
-        shelf_links = soup.find_all('a', href=re.compile(r'/genres/'))
-        for link in shelf_links[:max_genres]:
-            genre_text = link.get_text(strip=True)
-            if genre_text and len(genre_text) < 30:  # genres are usually short
-                genre_links.append(genre_text)
+        for text_node in all_text:
+            # get the parent element
+            parent = text_node.parent
+            if parent:
+                # look for genre links near this "Genres" label
+                # try to find sibling elements or children with genre links
+                genre_links = parent.find_all('a', href=re.compile(r'/genres/'))
+                
+                # filter out navigation/generic links
+                valid_genres = []
+                for link in genre_links:
+                    genre_text = link.get_text(strip=True)
+                    # genres should be short, single words or two words max
+                    if genre_text and len(genre_text) < 30 and not any(skip in genre_text.lower() for skip in ['browse', 'explore', 'home', 'recommendations']):
+                        valid_genres.append(genre_text)
+                
+                if valid_genres:
+                    # return just the first (primary) genre
+                    return valid_genres[0]
         
-        if genre_links:
-            return ", ".join(genre_links[:max_genres])
+        # strategy 2: if strategy 1 fails, look for specific genre-related div classes
+        # goodreads often uses specific containers for book metadata
+        genre_container = soup.find('div', class_=re.compile(r'genre', re.IGNORECASE))
+        if genre_container:
+            genre_links = genre_container.find_all('a', href=re.compile(r'/genres/'))
+            for link in genre_links[:1]:  # just get the first one
+                genre_text = link.get_text(strip=True)
+                if genre_text and len(genre_text) < 30:
+                    return genre_text
+        
+        # strategy 3: as a last resort, look for buttons or spans near "Genres"
+        # (goodreads sometimes wraps genres in button elements)
+        all_elements = soup.find_all(['button', 'span', 'a'])
+        collecting = False
+        for elem in all_elements:
+            text = elem.get_text(strip=True)
+            if 'Genres' in text:
+                collecting = True
+                continue
+            if collecting and elem.name == 'a' and '/genres/' in elem.get('href', ''):
+                genre_text = text
+                if genre_text and len(genre_text) < 30:
+                    return genre_text
+                collecting = False  # stop after first genre
         
         return "N/A"
         
     except Exception as e:
+        print(f"   ⚠️ error getting genre for {book_url}: {e}")
         return "N/A"
 
 
