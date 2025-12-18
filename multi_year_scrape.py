@@ -28,38 +28,57 @@ def scrape_goodreads_year(driver, year):
         
         # click "show more books" until all books load
         click_count = 0
-        max_clicks = 25
-        print(f"🔽 clicking 'show more books' for {year}...")
+        max_clicks = 30  # increased from 25
+        print(f"📽 clicking 'show more books' for {year}...")
         
         while click_count < max_clicks:
             try:
+                # wait a bit before looking for button
+                time.sleep(2)
+                
                 buttons = driver.find_elements(By.TAG_NAME, "button")
                 show_more_button = None
                 
                 for button in buttons:
                     try:
                         button_text = button.text.lower()
-                        if "show more" in button_text and "book" in button_text:
+                        # less strict: just look for "show more" OR "load more"
+                        if ("show more" in button_text or "load more" in button_text) and button.is_displayed():
                             show_more_button = button
                             break
                     except:
                         continue
                 
-                if show_more_button and show_more_button.is_displayed():
-                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", show_more_button)
-                    time.sleep(1)
-                    driver.execute_script("arguments[0].click();", show_more_button)
-                    click_count += 1
-                    if click_count % 5 == 0:  # print every 5 clicks
-                        print(f"   clicked {click_count} times...")
-                    time.sleep(3)
+                if show_more_button:
+                    try:
+                        # scroll button into view
+                        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", show_more_button)
+                        time.sleep(1)
+                        
+                        # try regular click first, then javascript click if that fails
+                        try:
+                            show_more_button.click()
+                        except:
+                            driver.execute_script("arguments[0].click();", show_more_button)
+                        
+                        click_count += 1
+                        if click_count % 5 == 0:  # print every 5 clicks
+                            print(f"   clicked {click_count} times...")
+                        
+                        # wait for new content to load
+                        time.sleep(3)
+                    except Exception as e:
+                        print(f"   ⚠️ error clicking button: {e}")
+                        break
                 else:
-                    print(f"   loaded all books after {click_count} clicks")
+                    print(f"   ✅ loaded all books after {click_count} clicks")
                     break
-            except:
+            except Exception as e:
+                print(f"   ⚠️ error in button loop: {e}")
                 break
         
         # scroll through page to ensure everything renders
+        print(f"📜 scrolling through page to render all content...")
         driver.execute_script("window.scrollTo(0, 0);")
         time.sleep(1)
         
@@ -299,12 +318,12 @@ def scrape_goodreads_multi_year(start_year, end_year, include_genres=False):
         traceback.print_exc()
     
     finally:
-        print("\n🔚 closing browser...")
+        print("\n📚 closing browser...")
         driver.quit()
 
 
 if __name__ == "__main__":
-    # scrape 2020-2025 WITHOUT genres (fast - ~10 mins)
+    # TEST MODE - scrape just 2025 to verify it works
     print("=" * 60)
     print("GOODREADS SCRAPER: 2025 ONLY (TEST)")
     print("=" * 60)
