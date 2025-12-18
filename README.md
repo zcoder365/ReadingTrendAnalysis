@@ -8,7 +8,5 @@ Data was collected from the "Most popular books published in 202X" list by Goodr
 - [2021](https://www.goodreads.com/book/popular_by_date/2021)
 - [2020](https://www.goodreads.com/book/popular_by_date/2020)
 
-## Charts to Construct
-- Compare most popular genres over the years (per year, then over the years)
-- See how certain genres grew more/less popular over the years
-- See the genre ratings per year (and over the years)
+## Overview
+Analyzed 5+ years of Goodreads book data (2020-2025) to identify genre trends and rating patterns. Discovered that fantasy and romance consistently dominate top rankings, while average ratings have declined 1.5% since 2020. Visualized findings using Python (Matplotlib, Seaborn) and created an interactive dashboard showcasing key insights.
