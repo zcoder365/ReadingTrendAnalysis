@@ -8,7 +8,7 @@ Data was collected from the "Most popular books published in 202X" list by Goodr
 - [2021](https://www.goodreads.com/book/popular_by_date/2021)
 - [2020](https://www.goodreads.com/book/popular_by_date/2020)
 
-## Notes
+## Charts to Construct
 - Compare which genres were the most popular over the years
 - See how certain genres grew more/less popular over the years
 - See the genre ratings per year
