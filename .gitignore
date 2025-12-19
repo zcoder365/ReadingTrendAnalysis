@@ -1,5 +1,5 @@
 # Specific files to ignore
-report-notes.md
+goodreads-report-notes.md
 
 # Python stuff
 __pycache__/
