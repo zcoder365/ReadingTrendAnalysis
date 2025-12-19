@@ -1,7 +1,3 @@
-# Pages
-*.html
-pages/
-
 # Python stuff
 __pycache__/
 *.py[cod]
