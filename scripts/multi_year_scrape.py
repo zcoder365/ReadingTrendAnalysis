@@ -304,11 +304,20 @@ def scrape_goodreads_multi_year(start_year, end_year, include_genres=False):
         driver.quit()
 
 
+def create_settings():
+    start_year = int(input("Enter start year: "))
+    end_year = int(input("Enter end year: "))
+    include_genres = input("Include genres? (y/n): ").lower() == 'y'
+    return start_year, end_year, include_genres
+
 if __name__ == "__main__":
     # scrape 2020 to 2025 data
     print("=" * 60)
     print("GOODREADS SCRAPER: 2020-2025")
     print("=" * 60)
     
+    # get user settings
+    start_year, end_year, include_genres = create_settings()
+    
     # scraping WITH genres - will take ~30-60 minutes for all books
-    scrape_goodreads_multi_year(2020, 2025, include_genres=True)
+    scrape_goodreads_multi_year(start_year=start_year, end_year=end_year, include_genres=include_genres)
