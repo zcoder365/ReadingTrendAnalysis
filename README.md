@@ -1,12 +1,17 @@
-# BookAnalysis
+# Reading Trends Analysis
 
-Data was collected from the "Most popular books published in 202X" list by Goodreads. Here are the URLS for years 2020-2025:
-- [2025](https://www.goodreads.com/book/popular_by_date/2025)
-- [2024](https://www.goodreads.com/book/popular_by_date/2024)
-- [2023](https://www.goodreads.com/book/popular_by_date/2023)
-- [2022](https://www.goodreads.com/book/popular_by_date/2022)
-- [2021](https://www.goodreads.com/book/popular_by_date/2021)
-- [2020](https://www.goodreads.com/book/popular_by_date/2020)
+Analyzing reading platform trends to understand user behavior and market dynamics.
 
-## Overview
-Analyzed 5+ years of Goodreads book data (2020-2025) to identify genre trends and rating patterns. Discovered that fantasy and romance consistently dominate top rankings, while average ratings have declined 1.5% since 2020. Visualized findings using Python (Matplotlib, Seaborn) and created an interactive dashboard showcasing key insights.
+## Projects
+
+### 📚 [Goodreads Trends (2020-2025)](./goodreads/)
+Analysis of rating patterns, genre popularity, and engagement across 1000+ books. You can read the report [here](...).
+
+### 📖 Fable Trends (coming soon)
+_Planned: comparative analysis of trends on Fable_
+
+## key findings
+[your top findings from goodreads]
+
+## tech stack
+Python • Pandas • Matplotlib • Seaborn
