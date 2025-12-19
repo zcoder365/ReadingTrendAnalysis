@@ -1,3 +1,6 @@
+# Specific files to ignore
+report-notes.md
+
 # Python stuff
 __pycache__/
 *.py[cod]
