@@ -1,6 +1,3 @@
-# Specific files to ignore
-goodreads-report-notes.md
-
 # Python stuff
 __pycache__/
 *.py[cod]
