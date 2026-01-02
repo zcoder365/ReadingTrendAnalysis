@@ -5,7 +5,7 @@ Analyzing reading platform trends to understand user behavior and market dynamic
 ## Projects
 
 ### 📚 [Goodreads Trends (2020-2025)](./goodreads/)
-Analysis of rating patterns, genre popularity, and user engagement across 1,200 books from Goodreads' most popular lists (2020-2025). Read the full report [here](./goodreads/Goodreads_Reading_Trend_Analysis.pdf).
+Analysis of rating patterns, genre popularity, and user engagement across 1,200 books from Goodreads' most popular lists (2020-2025). Read the full report [here](./goodreads/reports/GoodreadsReadingTrendAnalysis.pdf).
 
 **Key Findings:**
 - **66% engagement decline** from 2022 peak (58.7M ratings) to 2025 (20.1M ratings), suggesting platform migration
